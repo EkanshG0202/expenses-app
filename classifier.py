@@ -10,7 +10,7 @@ import joblib
 
 MISC_THRESHOLD = 0.3  # Confidence threshold
 
-def train_model(csv_path="expenses.csv", model_path="model.joblib"):
+def train_model(csv_path="expenses_labeled.csv", model_path="model.joblib"):
     df = pd.read_csv(csv_path)
     X = df["Description"]
     y = df["Category"]

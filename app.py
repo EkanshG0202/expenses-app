@@ -42,22 +42,34 @@ if uploaded_file:
 
         # Filter for "Misc" entries
         misc_df = df[df["Predicted_Category"] == "Misc"].copy()
+        corrected_misc = []
 
         if not misc_df.empty:
             st.subheader("🛠️ Manual Classification for 'Misc' Entries")
+
             for idx, row in misc_df.iterrows():
                 selected = st.selectbox(
                     f"Description: {row['Description']}",
                     options=["Food", "Transport", "Groceries", "Subscriptions", "Utilities", "Entertainment", "Misc"],
                     key=idx
                 )
+                if selected != "Misc":
+                    corrected_misc.append({
+                        "Date": row["Date"],
+                        "Description": row["Description"],
+                        "Amount": row["Amount"],
+                        "Category": selected
+                    })
                 df.at[idx, "Predicted_Category"] = selected
 
-        # Download button
-        st.subheader("📥 Download Updated Data")
-        st.download_button(
-            label="Download CSV",
-            data=df.to_csv(index=False).encode("utf-8"),
-            file_name="categorized_expenses.csv",
-            mime="text/csv"
-        )
+            # If corrections were made, show download option
+            if corrected_misc:
+                st.subheader("📤 Save Corrected Entries for Retraining")
+                corrected_df = pd.DataFrame(corrected_misc)
+                st.download_button(
+                    label="Download corrected_misc.csv",
+                    data=corrected_df.to_csv(index=False).encode("utf-8"),
+                    file_name="corrected_misc.csv",
+                    mime="text/csv"
+                )
+        
