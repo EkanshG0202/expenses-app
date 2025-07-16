@@ -1,45 +1,63 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import joblib
 
-st.set_page_config(page_title="Smart Budget Tracker", layout="centered")
+# Load the trained model
+model = joblib.load("model.joblib")
+THRESHOLD = 0.4  # Confidence cutoff for Misc category
 
-st.title("💸 Smart Budget Tracker")
-
-st.markdown("Upload your monthly expenses and get useful insights.")
+st.set_page_config(page_title="Smart Expense Categorizer", layout="wide")
+st.title("📊 Expense Categorization App")
 
 # File uploader
-uploaded_file = st.file_uploader("Upload a CSV file of your expenses", type=["csv"])
+uploaded_file = st.file_uploader("Upload your expenses CSV", type=["csv"])
 
 if uploaded_file:
-    try:
-        df = pd.read_csv(uploaded_file)
-        st.success("File uploaded successfully!")
+    df = pd.read_csv(uploaded_file)
+    st.subheader("📄 Uploaded Data")
+    st.dataframe(df)
 
-        # Show raw data
-        st.subheader("📄 Raw Expense Data")
+    # Ensure required columns
+    if "Description" not in df.columns:
+        st.error("CSV must have a 'Description' column.")
+    else:
+        # Predict categories
+        probs = model.predict_proba(df["Description"])
+        labels = model.classes_
+        predicted = []
+        confidence = []
+
+        for i, prob in enumerate(probs):
+            top_idx = prob.argmax()
+            conf = prob[top_idx]
+            label = labels[top_idx] if conf >= THRESHOLD else "Misc"
+            predicted.append(label)
+            confidence.append(conf)
+
+        df["Predicted_Category"] = predicted
+        df["Confidence"] = confidence
+
+        st.subheader("📌 Categorized Data")
         st.dataframe(df)
 
-        # Basic summary
-        st.subheader("📊 Expense Summary")
-        if 'Amount' in df.columns and 'Category' in df.columns:
-            category_summary = df.groupby("Category")["Amount"].sum().sort_values(ascending=False)
-            st.bar_chart(category_summary)
+        # Filter for "Misc" entries
+        misc_df = df[df["Predicted_Category"] == "Misc"].copy()
 
-            # Pie chart
-            fig, ax = plt.subplots()
-            category_summary.plot(kind='pie', autopct='%1.1f%%', startangle=90, ax=ax)
-            ax.set_ylabel('')
-            st.pyplot(fig)
+        if not misc_df.empty:
+            st.subheader("🛠️ Manual Classification for 'Misc' Entries")
+            for idx, row in misc_df.iterrows():
+                selected = st.selectbox(
+                    f"Description: {row['Description']}",
+                    options=["Food", "Transport", "Groceries", "Subscriptions", "Utilities", "Entertainment", "Misc"],
+                    key=idx
+                )
+                df.at[idx, "Predicted_Category"] = selected
 
-        else:
-            st.error("The uploaded CSV must have 'Amount' and 'Category' columns.")
-
-    except Exception as e:
-        st.error(f"Error reading file: {e}")
-
-else:
-    st.info("Please upload a CSV file to get started.")
-
-st.markdown("---")
-st.caption("Made with ❤️ using Streamlit")
+        # Download button
+        st.subheader("📥 Download Updated Data")
+        st.download_button(
+            label="Download CSV",
+            data=df.to_csv(index=False).encode("utf-8"),
+            file_name="categorized_expenses.csv",
+            mime="text/csv"
+        )

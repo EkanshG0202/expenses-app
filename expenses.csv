@@ -1,11 +1,102 @@
-Date,Category,Amount,Description
-2025-07-01,Food,1200,Swiggy lunch
-2025-07-02,Transport,300,Auto fare
-2025-07-03,Subscriptions,499,Netflix monthly
-2025-07-04,Groceries,900,BigBasket purchase
-2025-07-05,Utilities,1100,Electricity bill
-2025-07-06,Entertainment,600,Movie tickets
-2025-07-07,Food,450,Snacks
-2025-07-08,Groceries,650,Fruits and vegetables
-2025-07-09,Transport,200,Bus fare
-2025-07-10,Subscriptions,199,Spotify
+Date,Description,Amount,Category
+2025-05-01,Zomato order,450,Food
+2025-05-02,Swiggy lunch,520,Food
+2025-05-03,Dinner at KFC,680,Food
+2025-05-04,Cafe coffee,150,Food
+2025-05-05,Pizza Hut order,700,Food
+2025-05-06,Snacks from local shop,120,Food
+2025-05-07,Restaurant bill,950,Food
+2025-05-08,Breakfast at Udupi,180,Food
+2025-05-09,Ice cream,130,Food
+2025-05-10,Chai and samosa,60,Food
+2025-05-11,Domino’s pizza,520,Food
+2025-05-12,McDonald’s combo,480,Food
+2025-05-13,Subway sandwich,410,Food
+2025-05-14,Homemade lunch supplies,300,Food
+2025-05-15,Street food,220,Food
+2025-05-16,Late night snacks,190,Food
+2025-05-17,Food court meal,350,Food
+2025-05-18,Donuts and tea,100,Food
+2025-05-19,Cafeteria bill,270,Food
+2025-05-20,Burger King combo,490,Food
+2025-05-21,Ola ride,320,Transport
+2025-05-22,Uber ride,280,Transport
+2025-05-23,Metro ticket,80,Transport
+2025-05-24,Bus fare,50,Transport
+2025-05-25,Train booking,600,Transport
+2025-05-26,Fuel refill,1000,Transport
+2025-05-27,Auto fare,140,Transport
+2025-05-28,Cab to station,450,Transport
+2025-05-29,Parking fees,90,Transport
+2025-05-30,Bike service,750,Transport
+2025-06-01,Toll charges,120,Transport
+2025-06-02,Electric rickshaw fare,40,Transport
+2025-06-03,Flight taxi,1100,Transport
+2025-06-04,Office cab fare,380,Transport
+2025-06-05,Intercity bus,950,Transport
+2025-06-06,Scooter fuel,450,Transport
+2025-06-07,Train platform ticket,30,Transport
+2025-06-08,Airport express metro,160,Transport
+2025-06-09,Local bus pass,500,Transport
+2025-06-10,Ride share fare,220,Transport
+2025-06-11,BigBasket order,860,Groceries
+2025-06-12,Vegetable market,540,Groceries
+2025-06-13,D-Mart purchase,980,Groceries
+2025-06-14,Fruits and veggies,690,Groceries
+2025-06-15,Online grocery,740,Groceries
+2025-06-16,Milk and eggs,310,Groceries
+2025-06-17,Monthly grocery,1250,Groceries
+2025-06-18,Supermarket bill,870,Groceries
+2025-06-19,Grocery shopping,810,Groceries
+2025-06-20,Daily needs store,460,Groceries
+2025-06-21,Reliance Fresh order,920,Groceries
+2025-06-22,Hypercity bill,1100,Groceries
+2025-06-23,Kirana store,400,Groceries
+2025-06-24,Home delivery groceries,850,Groceries
+2025-06-25,Organic produce,620,Groceries
+2025-06-26,FMCG essentials,560,Groceries
+2025-06-27,Frozen food,740,Groceries
+2025-06-28,Ration shop visit,680,Groceries
+2025-06-29,Evening grocery run,520,Groceries
+2025-06-30,Grain and pulses,750,Groceries
+2025-07-01,Netflix,499,Subscriptions
+2025-07-02,Spotify Premium,199,Subscriptions
+2025-07-03,Hotstar,299,Subscriptions
+2025-07-04,ZEE5,149,Subscriptions
+2025-07-05,YouTube Premium,129,Subscriptions
+2025-07-06,Amazon Prime,999,Subscriptions
+2025-07-07,Disney+,399,Subscriptions
+2025-07-08,Gaana Plus,199,Subscriptions
+2025-07-09,Apple Music,99,Subscriptions
+2025-07-10,Newspaper subscription,80,Subscriptions
+2025-07-11,Audible membership,199,Subscriptions
+2025-07-12,Cricbuzz Live,149,Subscriptions
+2025-07-13,LinkedIn Premium,900,Subscriptions
+2025-07-14,E-paper subscription,100,Subscriptions
+2025-07-15,Kindle Unlimited,299,Subscriptions
+2025-07-16,OTT bundle pack,599,Subscriptions
+2025-07-17,SonyLIV monthly,299,Subscriptions
+2025-07-18,TVF Play,199,Subscriptions
+2025-07-19,Book club subscription,350,Subscriptions
+2025-07-20,Online magazine,180,Subscriptions
+2025-07-21,Electricity bill,1100,Utilities
+2025-07-22,Water bill,300,Utilities
+2025-07-23,Internet recharge,800,Utilities
+2025-07-24,Mobile recharge,399,Utilities
+2025-07-25,Gas cylinder,950,Utilities
+2025-07-26,Power bill,1120,Utilities
+2025-07-27,DTH recharge,399,Utilities
+2025-07-28,Landline payment,450,Utilities
+2025-07-29,WiFi plan,999,Utilities
+2025-07-30,Postpaid bill,699,Utilities
+2025-07-31,Cable TV fees,399,Utilities
+2025-08-01,Movie ticket,520,Entertainment
+2025-08-02,Concert pass,1300,Entertainment
+2025-08-03,Game purchase,999,Entertainment
+2025-08-04,Amusement park,750,Entertainment
+2025-08-05,Bowling alley,680,Entertainment
+2025-08-06,Theatre ticket,600,Entertainment
+2025-08-07,Comedy show,850,Entertainment
+2025-08-08,Cricket match,990,Entertainment
+2025-08-09,Streaming rental,149,Entertainment
+2025-08-10,Arcade visit,300,Entertainment
