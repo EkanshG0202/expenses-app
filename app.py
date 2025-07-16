@@ -4,7 +4,7 @@ import joblib
 
 # Load the trained model
 model = joblib.load("model.joblib")
-THRESHOLD = 0.4  # Confidence cutoff for Misc category
+THRESHOLD = 0.3  # Confidence cutoff for Misc category
 
 st.set_page_config(page_title="Smart Expense Categorizer", layout="wide")
 st.title("📊 Expense Categorization App")
