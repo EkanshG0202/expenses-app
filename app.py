@@ -1,114 +1,73 @@
-
 import streamlit as st
 import pandas as pd
-import joblib
-from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-import os
+import sys
+import sklearn
+from classifier import train_model, classify_transaction
+from db import fetch_transactions, insert_transaction, update_category
 
-st.set_page_config(page_title="Smart Expense Categorizer", layout="wide")
-st.title("📊 Expense Categorization App")
+st.title("💰 Smart Expense Tracker")
+st.write("Welcome to the main dashboard! Use the sidebar to navigate.")
 
-# Load the trained model
-if os.path.exists("model.joblib"):
-    model = joblib.load("model.joblib")
+
+# ✅ Streamlit App Config
+#st.set_page_config(page_title="Smart Expense Classifier", layout="wide")
+#st.title("💸 Smart Expense Classifier with Supabase")
+
+# ✅ Fetch transactions from Supabase
+df = fetch_transactions()
+
+if df.empty:
+    st.warning("⚠️ No transactions found in Supabase.")
+    st.stop()
+
+# ✅ Drop rows with missing required columns
+required_cols = ["id", "description", "amount", "category"]
+df = df[[col for col in required_cols if col in df.columns.tolist()]]
+
+# ✅ Train model on labeled data
+train_data = df[df["category"] != "misc"]
+if not train_data.empty:
+    model = train_model(df=train_data)
 else:
+    st.warning("⚠️ No labeled data to train model.")
     model = None
-THRESHOLD = 0.3
 
-uploaded_file = st.file_uploader("Upload your expenses CSV", type=["csv"])
+# ✅ Predict categories for 'misc' transactions
+if model is not None:
+    df["predicted_category"] = df.apply(
+        lambda row: classify_transaction(model, row["description"])
+        if row["category"] == "misc" else row["category"],
+        axis=1
+    )
 
-if uploaded_file:
-    df = pd.read_csv(uploaded_file)
-    st.subheader("📄 Uploaded Data")
-    st.dataframe(df)
-
-    if "Description" not in df.columns:
-        st.error("CSV must have a 'Description' column.")
-    else:
-        if model:
-            probs = model.predict_proba(df["Description"])
-            labels = model.classes_
-            predicted = []
-            confidence = []
-
-            for i, prob in enumerate(probs):
-                top_idx = prob.argmax()
-                conf = prob[top_idx]
-                label = labels[top_idx] if conf >= THRESHOLD else "Misc"
-                predicted.append(label)
-                confidence.append(conf)
-
-            df["Predicted_Category"] = predicted
-            df["Confidence"] = confidence
-        else:
-            df["Predicted_Category"] = "Misc"
-            df["Confidence"] = 0.0
-
-        st.subheader("📌 Categorized Data")
-        st.dataframe(df)
-
-        misc_df = df[df["Predicted_Category"] == "Misc"].copy()
-        corrected_misc = []
-
-        if not misc_df.empty:
-            st.subheader("🛠️ Manual Classification for 'Misc' Entries")
-            for idx, row in misc_df.iterrows():
-                selected = st.selectbox(
-                    f"Description: {row['Description']}",
-                    options=["Food", "Transport", "Groceries", "Subscriptions", "Utilities", "Entertainment", "Misc"],
-                    key=idx
-                )
-                if selected != "Misc":
-                    corrected_misc.append({
-                        "Date": row["Date"],
-                        "Description": row["Description"],
-                        "Amount": row["Amount"],
-                        "Category": selected
-                    })
-                df.at[idx, "Predicted_Category"] = selected
-
-            if corrected_misc:
-                st.subheader("📤 Save Corrected Entries for Retraining")
-                corrected_df = pd.DataFrame(corrected_misc)
-                st.download_button(
-                    label="Download corrected_misc.csv",
-                    data=corrected_df.to_csv(index=False).encode("utf-8"),
-                    file_name="corrected_misc.csv",
-                    mime="text/csv"
-                )
-
-                try:
-                    # Load the original labeled data
-                    if os.path.exists("expenses_labeled.csv"):
-                        df_main = pd.read_csv("expenses_labeled.csv")
-                    else:
-                        df_main = pd.DataFrame(columns=["Date", "Description", "Amount", "Category"])
-
-                    # Merge and save
-                    df_merged = pd.concat([df_main, corrected_df]).drop_duplicates(subset=["Date", "Description", "Amount"])
-                    df_merged.to_csv("expenses_labeled.csv", index=False)
-
-                    # Retrain
-                    X = df_merged["Description"]
-                    y = df_merged["Category"]
-
-                    pipeline = Pipeline([
-                        ("tfidf", TfidfVectorizer()),
-                        ("clf", LogisticRegression(max_iter=1000))
-                    ])
-                    pipeline.fit(X, y)
-                    joblib.dump(pipeline, "model.joblib")
-
-                    st.success("✅ Model retrained and saved!")
-                except Exception as e:
-                    st.warning(f"⚠️ Could not retrain model: {e}")
-
-        st.subheader("📥 Download Final Categorized CSV")
-        st.download_button(
-            label="Download categorized_expenses.csv",
-            data=df.to_csv(index=False).encode("utf-8"),
-            file_name="categorized_expenses.csv",
-            mime="text/csv"
+# ✅ Review and confirm predictions
+misc_df = df[df["category"] == "misc"]
+if not misc_df.empty and model is not None:
+    st.subheader("🔍 Review Predicted Categories for 'misc' Transactions")
+    for index, row in misc_df.iterrows():
+        st.write(f"💬 **{row['description']}** - ₹{row['amount']}")
+        predicted = row["predicted_category"]
+        new_cat = st.selectbox(
+            "Select correct category:",
+            ["food", "subscriptions", "transport", "shopping", "utilities", "misc"],
+            index=["food", "subscriptions", "transport", "shopping", "utilities", "misc"].index(predicted),
+            key=f"select_{index}"
         )
+        if st.button("✅ Confirm Category", key=f"btn_{index}"):
+            update_category(row["id"], new_cat)
+            st.success(f"Updated category to **{new_cat}**!")
+            st.rerun()
+
+# ✅ Add new transaction
+st.markdown("---")
+st.subheader("➕ Add New Expense")
+desc = st.text_input("Description")
+amt = st.number_input("Amount (₹)", min_value=1.0)
+cat = st.selectbox("Category", ["misc", "food", "subscriptions", "transport", "shopping", "utilities"])
+if st.button("Add Transaction"):
+    if desc and amt:
+        insert_transaction(pd.Timestamp.now().strftime("%Y-%m-%d"), desc, amt, cat)
+        st.success("✅ Added new transaction!")
+        st.rerun()
+    else:
+        st.error("Please enter a description and amount.")

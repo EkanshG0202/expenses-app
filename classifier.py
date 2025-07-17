@@ -1,19 +1,18 @@
-# classifier.py
-
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
 import joblib
 
 MISC_THRESHOLD = 0.3  # Confidence threshold
+MODEL_PATH = "model.joblib"
 
-def train_model(csv_path="expenses_labeled.csv", model_path="model.joblib"):
-    df = pd.read_csv(csv_path)
-    X = df["Description"]
-    y = df["Category"]
+def train_model(df=None, csv_path="expenses_labeled.csv", model_path=MODEL_PATH):
+    if df is None:
+        df = pd.read_csv(csv_path)
+
+    X = df["description"]  # lowercase, since your Supabase column is likely 'description'
+    y = df["category"]
 
     pipeline = Pipeline([
         ("tfidf", TfidfVectorizer()),
@@ -24,8 +23,9 @@ def train_model(csv_path="expenses_labeled.csv", model_path="model.joblib"):
     joblib.dump(pipeline, model_path)
     print("✅ Model trained and saved.")
 
+    return pipeline  # Return model for reuse
 
-def predict_categories(descriptions, model_path="model.joblib"):
+def predict_categories(descriptions, model_path=MODEL_PATH):
     pipeline = joblib.load(model_path)
     probs = pipeline.predict_proba(descriptions)
     labels = pipeline.classes_
@@ -34,15 +34,18 @@ def predict_categories(descriptions, model_path="model.joblib"):
     for i, prob in enumerate(probs):
         top_idx = prob.argmax()
         confidence = prob[top_idx]
-        predicted = labels[top_idx] if confidence >= MISC_THRESHOLD else "Misc"
+        predicted = labels[top_idx] if confidence >= MISC_THRESHOLD else "misc"
         results.append((descriptions[i], predicted, confidence))
 
-    return pd.DataFrame(results, columns=["Description", "Predicted_Category", "Confidence"])
+    return pd.DataFrame(results, columns=["description", "predicted_category", "confidence"])
 
+def classify_transaction(description, model_path=MODEL_PATH):
+    df = predict_categories([description], model_path=model_path)
+    return df["predicted_category"].iloc[0]  # Only return predicted label
 
+# Optional CLI usage
 if __name__ == "__main__":
     train_model()
-    # Example prediction
     sample = ["McDonalds Takeout"]
     df = predict_categories(sample)
     print(df)
