@@ -1,14 +1,14 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from db import fetch_transactions
+from db_uploads import fetch_uploaded_expenses
 
 # --- Page config (Only set ONCE and at the TOP) ---
 st.set_page_config(page_title="Spending Analytics", page_icon="📊", layout="wide")
 st.title("📈 Spending Analytics Dashboard")
 
 # --- Load data ---
-df = fetch_transactions()
+df = fetch_uploaded_expenses()
 
 if df.empty:
     st.warning("No transactions found. Please upload data first.")

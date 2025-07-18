@@ -4,6 +4,8 @@ import sys
 import sklearn
 from classifier import train_model, classify_transaction
 from db import fetch_transactions, insert_transaction, update_category
+from db_uploads import fetch_uploaded_expenses, insert_parsed_transaction
+import time
 
 st.title("💰 Smart Expense Tracker")
 st.write("Welcome to the main dashboard! Use the sidebar to navigate.")
@@ -61,13 +63,73 @@ if not misc_df.empty and model is not None:
 # ✅ Add new transaction
 st.markdown("---")
 st.subheader("➕ Add New Expense")
-desc = st.text_input("Description")
-amt = st.number_input("Amount (₹)", min_value=1.0)
-cat = st.selectbox("Category", ["misc", "food", "subscriptions", "transport", "shopping", "utilities"])
+if "desc" not in st.session_state:
+    st.session_state["desc"] = ""
+if "amt" not in st.session_state:
+    st.session_state["amt"] = 0.0
+
+desc = st.text_input("Description", value=st.session_state["desc"])
+amt = st.number_input("Amount", value=st.session_state["amt"])
+
+# On submit, save desc and amt into session state
 if st.button("Add Transaction"):
     if desc and amt:
-        insert_transaction(pd.Timestamp.now().strftime("%Y-%m-%d"), desc, amt, cat)
-        st.success("✅ Added new transaction!")
-        st.rerun()
+        st.session_state["desc"] = desc
+        st.session_state["amt"] = amt
+
+        predicted_cat, confidence = classify_transaction(desc)
+        st.session_state["predicted_cat"] = predicted_cat
+        st.session_state["confidence"] = confidence
+
+        st.info(f"🧠 Model Prediction: **{predicted_cat}** with confidence **{confidence*100:.2f}%**")
+
+        if predicted_cat != "misc" and confidence > 0.25:
+            st.session_state["awaiting_confirmation"] = True
+        else:
+            st.session_state["awaiting_manual_category"] = True
+    else:
+        st.error("Please enter both description and amount.")
+
+# ✅ If model predicted confidently, ask for confirmation
+if st.session_state.get("awaiting_confirmation", False):
+    st.write(f"💡 Predicted category: **{st.session_state['predicted_cat']}**")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✅ Confirm Prediction"):
+            insert_transaction(pd.Timestamp.now().strftime("%Y-%m-%d"), st.session_state["desc"], st.session_state["amt"], st.session_state["predicted_cat"])
+            insert_parsed_transaction(pd.Timestamp.now().strftime("%Y-%m-%d"), st.session_state["desc"], st.session_state["amt"], st.session_state["predicted_cat"])
+            st.success(f"✅ Added with predicted category: **{st.session_state['predicted_cat']}**")
+
+            # Reset state
+            st.session_state["desc"] = ""
+            st.session_state["amt"] = 0.0
+            st.session_state["awaiting_confirmation"] = False
+
+    with col2:
+        if st.button("❌ Choose Another"):
+            st.session_state["awaiting_confirmation"] = False
+            st.session_state["awaiting_manual_category"] = True
+
+
+# Show manual category if model was unsure
+if st.session_state.get("awaiting_manual_category", False):
+    st.warning("⚠️ Low confidence in prediction or predicted 'misc'. Please choose a category.")
+    manual_cat = st.selectbox("Select category", ["Food", "Subscriptions", "Transport", "Shopping", "Utilities", "misc"], key="manual_cat_select")
+
+    if st.button("Confirm Category"):
+        try:
+            insert_transaction(pd.Timestamp.now().strftime("%Y-%m-%d"), st.session_state["desc"], st.session_state["amt"], manual_cat)
+            insert_parsed_transaction(pd.Timestamp.now().strftime("%Y-%m-%d"), st.session_state["desc"], st.session_state["amt"], manual_cat)
+            st.success(f"✅ Added with selected category: **{manual_cat}**")
+        except Exception as e:
+            st.error(f"Insertion failed: {e}")
+        
+        # Clear session state
+        st.session_state["awaiting_manual_category"] = False
+        st.session_state["desc"] = ""
+        st.session_state["amt"] = 0.0
     else:
         st.error("Please enter a description and amount.")
+
+
+
