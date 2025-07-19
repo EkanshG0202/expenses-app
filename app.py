@@ -114,7 +114,7 @@ if st.session_state.get("awaiting_confirmation", False):
 # Show manual category if model was unsure
 if st.session_state.get("awaiting_manual_category", False):
     st.warning("⚠️ Low confidence in prediction or predicted 'misc'. Please choose a category.")
-    manual_cat = st.selectbox("Select category", ["Food", "Subscriptions", "Transport", "Shopping", "Utilities", "misc"], key="manual_cat_select")
+    manual_cat = st.selectbox("Select category", ["Food", "Subscriptions", "Transport", "Shopping", "Utilities", "Misc","Entertainment","Medicine","Personal","Education","Investments","Work"], key="manual_cat_select")
 
     if st.button("Confirm Category"):
         try:
