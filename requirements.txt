@@ -1,4 +1,7 @@
-streamlit
 pandas
+streamlit
 scikit-learn
-matplotlib
+joblib
+uuid
+supabase
+python-dotenv
