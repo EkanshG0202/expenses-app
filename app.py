@@ -1,10 +1,84 @@
 import streamlit as st
 import pandas as pd
 import time
+import secrets
 from classifier import train_model, classify_transaction
 from db import fetch_transactions, insert_transaction, update_category
 from db_uploads import fetch_uploaded_expenses, insert_parsed_transaction
+from supabase import create_client
+from passlib.hash import pbkdf2_sha256
+import os
 
+# Supabase setup
+SUPABASE_URL = "https://jdlpvzitixrwmipseqcc.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkbHB2eml0aXhyd21pcHNlcWNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MjY5NjcsImV4cCI6MjA2ODMwMjk2N30.AAVPvGApxbeP9Y1lPEPrUBplyK8fXOvjrB4xDAYjadc"
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Session handling
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+# === Auth functions ===
+def hash_password(password):
+    return pbkdf2_sha256.hash(password)
+
+def check_password(password, hashed):
+    return pbkdf2_sha256.verify(password, hashed)
+
+def signup():
+    st.subheader("🆕 Sign Up")
+    username = st.text_input("Username", key="signup_user")
+    password = st.text_input("Password", type="password", key="signup_pass")
+    if st.button("Create Account"):
+        res = supabase.table("users").select("*").eq("username", username).execute()
+        if res.data:
+            st.error("Username already exists!")
+            return
+        hashed_password = hash_password(password)
+        supabase.table("users").insert({"username": username, "password": hashed_password}).execute()
+        st.success("Account created. Please login.")
+
+def login():
+    st.subheader("🔐 Login")
+    username = st.text_input("Username", key="login_user")
+    password = st.text_input("Password", type="password", key="login_pass")
+    if st.button("Login"):
+        res = supabase.table("users").select("*").eq("username", username).execute()
+        if not res.data:
+            st.error("Invalid username.")
+            return
+        user = res.data[0]
+        if check_password(password, user["password"]):
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.session_state.user_id = user["id"]
+            st.success(f"Welcome back, {username}!")
+            time.sleep(1)  # Optional: let success message show
+            st.switch_page("pages/1_Transactions.py")
+            st.rerun()
+        else:
+            st.error("Incorrect password.")
+user_id = st.session_state.get("user_id")
+
+def logout():
+    st.session_state.clear()
+    st.rerun()
+
+# === Auth UI ===
+st.sidebar.title("🔐 User Access")
+if not st.session_state.logged_in:
+    auth_action = st.sidebar.radio("Choose action", ["Login", "Sign Up"])
+    if auth_action == "Login":
+        login()
+    else:
+        signup()
+    st.stop()
+else:
+    st.sidebar.success(f"Logged in as: {st.session_state.username}")
+    if st.sidebar.button("🚪 Logout"):
+        logout()
+
+# === Main App ===
 st.title("💰 Smart Expense Tracker")
 st.write("Welcome to the main dashboard! Use the sidebar to navigate.")
 
@@ -52,61 +126,3 @@ if model is not None:
                 st.rerun()
 
 # ✅ Add New Transaction
-st.markdown("---")
-st.subheader("➕ Add New Expense")
-
-desc = st.text_input("Description", value=st.session_state.get("desc", ""))
-amt = st.number_input("Amount", value=st.session_state.get("amt", 0.0))
-
-if st.button("Add Transaction"):
-    if desc and amt:
-        st.session_state["desc"] = desc
-        st.session_state["amt"] = amt
-
-        predicted_cat, confidence = classify_transaction(desc)
-        st.session_state["predicted_cat"] = predicted_cat
-        st.session_state["confidence"] = confidence
-
-        st.info(f"🧠 Model Prediction: **{predicted_cat}** with confidence **{confidence*100:.2f}%**")
-
-        if predicted_cat != "misc" and confidence > 0.25:
-            st.session_state["awaiting_confirmation"] = True
-            st.session_state["awaiting_manual_category"] = False
-        else:
-            st.session_state["awaiting_manual_category"] = True
-            st.session_state["awaiting_confirmation"] = False
-    else:
-        st.error("Please enter both description and amount.")
-
-# ✅ Confirmation or manual category
-if st.session_state.get("awaiting_confirmation", False):
-    st.write(f"💡 Predicted category: **{st.session_state['predicted_cat']}**")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Confirm Prediction"):
-            insert_transaction(pd.Timestamp.now().strftime("%Y-%m-%d"), desc, amt, st.session_state["predicted_cat"])
-            insert_parsed_transaction(pd.Timestamp.now().strftime("%Y-%m-%d"), desc, amt, st.session_state["predicted_cat"])
-            st.success(f"✅ Added with predicted category: **{st.session_state['predicted_cat']}**")
-            for key in ["desc", "amt", "awaiting_confirmation", "predicted_cat", "confidence"]:
-                st.session_state.pop(key, None)
-            st.rerun()
-    with col2:
-        if st.button("❌ Choose Another"):
-            st.session_state["awaiting_manual_category"] = True
-            st.session_state["awaiting_confirmation"] = False
-            st.rerun()
-
-if st.session_state.get("awaiting_manual_category", False):
-    st.warning("⚠️ Low confidence in prediction or predicted 'misc'. Please choose a category.")
-    manual_cat = st.selectbox("Select category", ["Food", "Subscriptions", "Transport", "Shopping", "Utilities", "Misc","Entertainment","Medicine","Personal","Education","Investments","Work"], key="manual_cat_select")
-
-    if st.button("Confirm Category"):
-        try:
-            insert_transaction(pd.Timestamp.now().strftime("%Y-%m-%d"), desc, amt, manual_cat)
-            insert_parsed_transaction(pd.Timestamp.now().strftime("%Y-%m-%d"), desc, amt, manual_cat)
-            st.success(f"✅ Added with selected category: **{manual_cat}**")
-        except Exception as e:
-            st.error(f"Insertion failed: {e}")
-        for key in ["desc", "amt", "awaiting_manual_category"]:
-            st.session_state.pop(key, None)
-        st.rerun()

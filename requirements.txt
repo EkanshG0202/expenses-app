@@ -8,3 +8,4 @@ Requests==2.32.4
 scikit_learn==1.7.1
 streamlit==1.46.1
 supabase==2.17.0
+passlib

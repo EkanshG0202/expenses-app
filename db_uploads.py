@@ -7,24 +7,34 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def insert_parsed_transaction(date, description, amount, category):
+# ✅ Insert a transaction (linked to a user)
+def insert_parsed_transaction(user_id, date, description, amount, category):
     try:
         new_entry = {
+            "user_id": user_id,
             "date": date,
             "description": description,
             "amount": amount,
             "category": category
         }
         response = supabase.table("expense_uploads").insert(new_entry).execute()
-        print("✅ Inserted into expenses_upload:", response)
+        print("✅ Inserted into expense_uploads:", response)
         return response
     except Exception as e:
         print("❌ insert_parsed_transaction failed:", e)
         raise e
 
-def fetch_uploaded_expenses():
-    response = supabase.table("expense_uploads").select("*").order("created_at", desc=True).execute()
+# ✅ Fetch only transactions for this user
+def fetch_uploaded_expenses(user_id):
+    response = (
+        supabase.table("expense_uploads")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
     return pd.DataFrame(response.data)
 
-def update_uploaded_category(id, category):
-    supabase.table("expense_uploads").update({"category": category}).eq("id", id).execute()
+# ✅ Update only the given user’s row
+def update_uploaded_category(user_id, id, category):
+    supabase.table("expense_uploads").update({"category": category}).eq("user_id", user_id).eq("id", id).execute()
