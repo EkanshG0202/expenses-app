@@ -13,7 +13,7 @@ if "user_id" not in st.session_state:
 user_id = st.session_state.user_id
 
 st.markdown("---")
-st.subheader("➕ Add New Expense")
+st.subheader("➕ Add New Transaction")
 
 desc = st.text_input("Description", value=st.session_state.get("desc", ""))
 amt = st.number_input("Amount", value=st.session_state.get("amt", 0.0))
